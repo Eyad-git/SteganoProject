@@ -1,30 +1,27 @@
-def text_to_bits(text):
+def to_binary(data):
     """
-    Converts a string of text into a string of bits (0s and 1s).
-    Validates that characters are within the 8-bit range (0-255).
+    Converts input (String or Bytes) into a string of bits.
+    Handles Emojis automatically by encoding to UTF-8 bytes first.
     """
-    binary_string = ""
-    for char in text:
-        if ord(char) > 255:
-            # Side Case Handled: Non-supported character
-            raise ValueError(f"Character '{char}' is not supported. Only standard text (ASCII/Latin-1) is allowed.")
-            
-        binary_char = format(ord(char), '08b')
-        binary_string += binary_char
-    return binary_string
+    if isinstance(data, str):
+        # Convert text/emojis to raw bytes (UTF-8)
+        data = data.encode('utf-8')
+    
+    # Convert every byte to 8 bits
+    return "".join(format(b, '08b') for b in data)
 
-def bits_to_text(binary_string):
+def from_binary(binary_string):
     """
-    Converts a string of bits (0s and 1s) back into text.
+    Converts binary string back into raw bytes.
+    (We do not decode to text here yet, because the bytes might be encrypted!)
     """
-    text_string = ""
+    byte_array = bytearray()
     for i in range(0, len(binary_string), 8):
-        byte = binary_string[i:i+8]
-        
-        # Side Case Handled: Incomplete byte at the end
-        if len(byte) < 8:
+        # Slice 8 bits
+        byte_chunk = binary_string[i:i+8]
+        if len(byte_chunk) < 8:
             break
-            
-        char_code = int(byte, 2)
-        text_string += chr(char_code)
-    return text_string
+        # Convert to integer byte
+        byte_array.append(int(byte_chunk, 2))
+        
+    return bytes(byte_array)
