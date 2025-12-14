@@ -1,57 +1,85 @@
-# test_suite.py - Root folder
-# Run with: python test_suite.py
+from src import utils
+from src import bmp_manager
 
-# --- IMPORTS ---
-from src.utils import text_to_bits, bits_to_text
-# --- HELPER FUNCTION ---
-def run_test_case(test_id, func_name, input_val, actual_output, expected_output):
-    """
-    Prints the test details in the requested format: Input -> Function -> Output
-    """
-    print(f"--- TEST {test_id} ---")
-    # Show Input (truncated if too long for display)
-    print(f"Input: {input_val}")
+def run_tests():
+    print("=== STARTING PROJECT TESTS ===\n")
+
+    # ---------------------------------------------------------
+    # STEP 1 TESTS: UTILS (Text <-> Binary)
+    # ---------------------------------------------------------
+    print("--- Step 1: Utils Tests ---")
     
-    # Show Function Name
-    print(f"Function: {func_name}")
+    # Test 1.1: Encoding
+    input_text = "Hi"
+    expected_binary = "0100100001101001"
+    actual_binary = utils.text_to_bits(input_text)
     
-    # Show the Actual Output
-    print(f"Output: {actual_output}")
-    
-    # Check Result
-    if actual_output == expected_output:
-        print("Result: Pass")
-        print("")
-        return True
+    if actual_binary == expected_binary:
+        print(f"TEST 1.1 (Text to Binary): PASS")
     else:
-        print("Result: Fail")
-        print(f"Expected: {expected_output}")
-        print("")
-        return False
+        print(f"TEST 1.1 (Text to Binary): FAIL")
+        print(f"  Expected: {expected_binary}")
+        print(f"  Actual:   {actual_binary}")
 
-print("========================================")
-print("       STEGANOGRAPHY TEST SUITE         ")
-print("========================================")
+    # Test 1.2: Decoding
+    actual_text = utils.bits_to_text(expected_binary)
+    if actual_text == input_text:
+        print(f"TEST 1.2 (Binary to Text): PASS")
+    else:
+        print(f"TEST 1.2 (Binary to Text): FAIL")
+        print(f"  Expected: {input_text}")
+        print(f"  Actual:   {actual_text}")
+    
+    print("-" * 30)
 
-# ==========================================
-# STEP 1: UTILS MODULE TESTS
-# ==========================================
-print("\n=== STEP 1: Utils (Text <-> Binary) ===")
+    # ---------------------------------------------------------
+    # STEP 2 TESTS: IMAGE HANDLER (Read/Write BMP)
+    # ---------------------------------------------------------
+    print("--- Step 2: Image Handler Tests ---")
+    
+    input_filename = "test.bmp"
+    output_filename = "test_copy.bmp"
 
-# Test 1: text_to_bits
-input_1 = "A"
-output_1 = text_to_bits(input_1)
-expected_1 = "01000001" # ASCII 65
-run_test_case(1, "text_to_bits", input_1, output_1, expected_1)
+    # Test 2.1: Reading
+    print(f"Reading '{input_filename}'...")
+    header, pixels = bmp_manager.read_bmp(input_filename)
 
-# Test 2: bits_to_text
-input_2 = "01000001"
-output_2 = bits_to_text(input_2)
-expected_2 = "A"
-run_test_case(2, "bits_to_text", input_2, output_2, expected_2)
+    if header is None or pixels is None:
+        print(f"TEST 2.1 (Read BMP): FAIL - Could not read '{input_filename}'")
+        print("  (Make sure 'test.bmp' is in the same folder as this script)")
+        return # Stop tests if we can't read the file
 
-# Test 3: text_to_bits (Multiple characters)
-input_3 = "Hi"
-output_3 = text_to_bits(input_3)
-expected_3 = "0100100001101001" # H=72, i=105
-run_test_case(3, "text_to_bits", input_3, output_3, expected_3)
+    # Validate Header Size
+    if len(header) == 54:
+        print(f"TEST 2.1 (Read BMP - Header Size 54): PASS")
+    else:
+        print(f"TEST 2.1 (Read BMP): FAIL - Header size is {len(header)} bytes (Expected 54)")
+
+    # Test 2.2: Writing
+    print(f"Saving copy to '{output_filename}'...")
+    success = bmp_manager.save_bmp(output_filename, header, pixels)
+
+    if success:
+        print(f"TEST 2.2 (Save BMP): PASS (File created)")
+    else:
+        print(f"TEST 2.2 (Save BMP): FAIL (Save function returned False)")
+
+    # Test 2.3: Verification (Byte-by-Byte Comparison)
+    # We open both files and ensure they are identical
+    try:
+        with open(input_filename, 'rb') as f1:
+            original_data = f1.read()
+        with open(output_filename, 'rb') as f2:
+            new_data = f2.read()
+            
+        if original_data == new_data:
+            print(f"TEST 2.3 (Integrity Check): PASS (Copy is identical to original)")
+        else:
+            print(f"TEST 2.3 (Integrity Check): FAIL (Copy differs from original)")
+    except Exception as e:
+        print(f"TEST 2.3 (Integrity Check): FAIL (Error opening files: {e})")
+
+    print("\n=== ALL TESTS COMPLETE ===")
+
+if __name__ == "__main__":
+    run_tests()
